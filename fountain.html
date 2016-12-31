@@ -13,6 +13,7 @@
 				background-color: #f0f0f0;
 				margin: 0px;
 				overflow: hidden;
+				touch-action: none;
 			}
 
 			#oldie { background-color: #ddd !important }
@@ -271,15 +272,31 @@
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				renderer.clippingPlanes.push( groundPlane );
 				container.appendChild( renderer.domElement );
+				
+				if ( window.PointerEvent )
+				{
+          document.addEventListener( 'pointermove',   onDocumentMouseMove, false );
+          document.addEventListener( 'pointerdown',   onDocumentMouseDown, false );
+          document.addEventListener( 'pointerup',     onDocumentMouseUp,   false );
+          document.addEventListener( 'pointercancel', onDocumentMouseUp,   false );
+          
+          // inhibit MS context menu
+          // see: https://msdn.microsoft.com/en-us/library/jj583807(v=vs.85).aspx
+          var eatEventFunc = function(e) { e.preventDefault(); };
+          document.addEventListener( 'MSHoldVisual', eatEventFunc, false);
+          document.addEventListener( 'contextmenu',  eatEventFunc, false);
+				}
+				else
+				{
+          document.addEventListener( 'mousemove',  onDocumentMouseMove,  false );
+          document.addEventListener( 'mousedown',  onDocumentMouseDown,  false );
+          document.addEventListener( 'mouseup',    onDocumentMouseUp,    false );
 
-				document.addEventListener( 'mousemove',  onDocumentMouseMove,  false );
-				document.addEventListener( 'mousedown',  onDocumentMouseDown,  false );
-				document.addEventListener( 'mouseup',    onDocumentMouseUp,    false );
-
-				document.addEventListener( 'touchmove',   onDocumentTouchMove,  false );
-				document.addEventListener( 'touchstart',  onDocumentTouchStart, false );
-				document.addEventListener( 'touchend',    onDocumentTouchEnd,   false );
-				document.addEventListener( 'touchcancel', onDocumentTouchEnd,   false );
+          document.addEventListener( 'touchmove',   onDocumentTouchMove,  false );
+          document.addEventListener( 'touchstart',  onDocumentTouchStart, false );
+          document.addEventListener( 'touchend',    onDocumentTouchEnd,   false );
+          document.addEventListener( 'touchcancel', onDocumentTouchEnd,   false );
+        }
 
 				//
 				window.addEventListener( 'resize', onWindowResize, false );
