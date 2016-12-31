@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Pretty Fountain!</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no" />
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #f0f0f0;
+				margin: 0px;
+				overflow: hidden;
+				touch-action: none;
+			}
+
+			#oldie { background-color: #ddd !important }
+		</style>
+	</head>
+	<body>
+
+		<script src="three.js"></script>
+
+		<script src="Detector.js"></script>
+
+		<script>
+
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+			
+			ACC = 9.8;
+			TWO_PI = 2.0 * Math.PI;
+			
+			METERS_PER_BOX  = 0.7;
+			UNITS_PER_BOX   = 50;
+			METERS_PER_UNIT = METERS_PER_BOX / UNITS_PER_BOX;
+			UNITS_PER_METER = UNITS_PER_BOX / METERS_PER_BOX;
+			
+			SPRITE_RADIUS   = 10;
+      LAUNCH_RADIUS   = 3.2 * METERS_PER_UNIT;
+      
+      groundPlane = new THREE.Plane( new THREE.Vector3(0,1,0), 0 );
+
+			// inheritance tools from http://javascriptissexy.com/oop-in-javascript-what-you-need-to-know/
+      if (typeof Object.create !== 'function')
+      {
+        Object.create = function(o)
+        {
+          function F(){}
+          F.prototype = o;
+          return new F();
+        };
+      }
+      function inheritPrototype( childObject, parentObject )
+      {
+        var copyOfParent = Object.create(parentObject.prototype);
+        copyOfParent.constructor = childObject;
+        childObject.prototype = copyOfParent;
+      }
+      
+      function RandomRange( min, max )
+      {
+        return Math.random() * (max - min) + min;
+      }
+			
+			var colorList = [];
+    
+      var STEPS_PER_CHAN = 5;
+      var chanCombos = [ [0,1,2], [1,0,2], [2,1,0] ];
+      var colorVector = [];
+      for ( var comboIdx=0; comboIdx<chanCombos.length; comboIdx++ )
+      {
+        majorChan  = chanCombos[comboIdx][0];
+        minorChanA = chanCombos[comboIdx][1];
+        minorChanB = chanCombos[comboIdx][2];
+    
+        for ( var majorValIdx=0; majorValIdx<STEPS_PER_CHAN; majorValIdx++ )
+        {
+          colorVector[majorChan] = 0.7 + (majorValIdx/(STEPS_PER_CHAN-1))*(1.0-0.7);
+          for ( var minorValIdxA=0; minorValIdxA<STEPS_PER_CHAN; minorValIdxA++ )
+          {
+            colorVector[minorChanA] = 0.2 + (minorValIdxA/(STEPS_PER_CHAN-1))*(1.0-0.2);
+            for ( var minorValIdxB=0; minorValIdxB<STEPS_PER_CHAN; minorValIdxB++ )
+            {
+              colorVector[minorChanB] = 0.25 + (minorValIdxB/(STEPS_PER_CHAN-1))*(1.0-0.25);
+              colorList.push( new THREE.Color(colorVector[0],colorVector[1],colorVector[2]) );
+            }
+          }
+        }
+      }
+      
+      function getRandomColor()
+      {
+        var idx = Math.floor( Math.random() * colorList.length );
+        return colorList[idx];
+      }
+
+			function Droplet ( )
+			{
+			  THREE.Group.call( this );
+			  
+				var lineGeo = new THREE.Geometry();
+				var lineVertexLo = new THREE.Vector3( 0, -SPRITE_RADIUS, 0 );
+				var lineVertexHi = new THREE.Vector3( 0,  SPRITE_RADIUS, 0 );
+				lineGeo.vertices.push( lineVertexLo );
+				lineGeo.vertices.push( lineVertexHi );
+				var lineMaterial = new THREE.LineBasicMaterial( { color: 0x33ff44, linewidth: 3 } );
+			  this.droplet = new THREE.Line( lineGeo, lineMaterial );
+
+				var shadowGeo = new THREE.Geometry();
+				shadowGeo.vertices.push( new THREE.Vector3() );
+				shadowGeo.vertices.push( new THREE.Vector3() );
+			  this.shadow = new THREE.Line( shadowGeo, this.shadowMaterial );
+			  
+			  this.add( this.droplet, this.shadow );
+			  
+			  this.startPos = new THREE.Vector3();
+			  this.startV   = new THREE.Vector3();
+			}
+			inheritPrototype( Droplet, THREE.Group );
+			
+			Droplet.prototype.shadowMaterial = new THREE.LineBasicMaterial(
+        { color: 0xdddddd, linewidth: 2, // polygonOffset: true, polygonOffsetUnits: -22,
+        depthTest: true }
+			);
+			
+			Droplet.prototype.lightDir = (new THREE.Vector3( -0.4, -0.6, +0.1 )).normalize();
+			
+			Droplet.prototype.scratchRay = new THREE.Ray( new THREE.Vector3(), Droplet.prototype.lightDir );
+			
+			Droplet.prototype.init = function( startPos )
+			{
+			  this.droplet.material.color.copy( getRandomColor() );
+			
+			  startPos = startPos || new THREE.Vector3();
+			  this.droplet.position.set( startPos.x, 0, startPos.z );
+
+			  this.startTime = performance.now();
+        this.startPos.copy(startPos).multiplyScalar(METERS_PER_UNIT);
+
+        // equation from: http://www.physicsclassroom.com/class/1DKin/Lesson-6/Kinematic-Equations-and-Free-Fall
+        // parameters from: http://www.calctool.org/CALC/phys/newtonian/projectile
+			  var horizAngle = Math.random() * TWO_PI;
+			  var startX     = Math.cos(horizAngle) * LAUNCH_RADIUS;
+			  var startZ     = Math.sin(horizAngle) * LAUNCH_RADIUS;
+			  this.startV.set( startX, 1.0, startZ ).setLength( RandomRange(10,12) );
+
+        this.shadow.visible = true;
+			}
+			
+			Droplet.prototype.getPositionInMeters = function()
+			{
+			  return this.droplet.position.clone().multiplyScalar( METERS_PER_UNIT );
+			}
+			
+			Droplet.prototype.setPositionFromMeters = function( x, y, z )
+			{
+			  return this.droplet.position.set( x*UNITS_PER_METER, y*UNITS_PER_METER, z*UNITS_PER_METER );
+			}
+
+			Droplet.prototype.update = function()
+			{
+			  var diffTime  = (performance.now() - this.startTime) * .001;
+			  var timeSq    = diffTime * diffTime;
+			  var height    = this.startV.y * diffTime + timeSq * (-ACC * 0.5);
+			  var nowX      = this.startPos.x + this.startV.x * diffTime;   // in meters
+			  var nowZ      = this.startPos.z + this.startV.z * diffTime;   // in meters
+			  this.setPositionFromMeters( nowX, height, nowZ );
+			  
+			  // figure out shadow for this droplet
+			  var dropletPos = this.droplet.position;   // in world units
+			  this.scratchRay.origin.set( dropletPos.x,  dropletPos.y+SPRITE_RADIUS, dropletPos.z );
+			  if ( this.scratchRay.origin.y < 0 )
+			  {
+			    this.shadow.visible = false;
+			  }
+			  else
+			  {
+			    shadowLineTop = this.scratchRay.intersectPlane( groundPlane );
+			    shadowLineBot = new THREE.Vector3();
+			    
+			    this.scratchRay.origin.y = dropletPos.y - SPRITE_RADIUS;
+			    if ( this.scratchRay.origin.y < 0 )
+			      shadowLineBot.set( dropletPos.x, 0.0, dropletPos.z );
+			    else
+			      this.scratchRay.intersectPlane( groundPlane, shadowLineBot );
+
+			    // asdfasdf
+			    this.shadow.geometry.vertices[0].copy( shadowLineTop );
+			    this.shadow.geometry.vertices[1].copy( shadowLineBot );
+			    this.shadow.geometry.verticesNeedUpdate = true;
+			  }
+			}
+
+			var container;
+			var camera, scene, renderer;
+			var plane, cube;
+			var mouse, raycaster, isShiftDown = false;
+
+			var objects = [];
+			var dropsActive = new THREE.Object3D();
+			var dropsIdle   = new THREE.Object3D();
+			
+			var mouseInfo = { clientX:null, clientY:null, buttonOn:false };
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				var info = document.createElement( 'div' );
+				info.style.position = 'absolute';
+				info.style.top = '10px';
+				info.style.width = '100%';
+				info.style.textAlign = 'center';
+				info.innerHTML = '<a href="http://threejs.org" target="_blank">three.js</a> - voxel painter - webgl<br><strong>click</strong>: add voxel, <strong>shift + click</strong>: remove voxel';
+				//container.appendChild( info );
+
+				camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.set( 500, 800, 1300 );
+				camera.lookAt( new THREE.Vector3() );
+
+				scene = new THREE.Scene();
+
+				// grid
+				var size = 500, step = 50;
+				var geometry = new THREE.Geometry();
+				for ( var i = - size; i <= size; i += step ) {
+					geometry.vertices.push( new THREE.Vector3( - size, 0, i ) );
+					geometry.vertices.push( new THREE.Vector3(   size, 0, i ) );
+
+					geometry.vertices.push( new THREE.Vector3( i, 0, - size ) );
+					geometry.vertices.push( new THREE.Vector3( i, 0,   size ) );
+				}
+
+				var material = new THREE.LineBasicMaterial( { color: 0x888888, opacity: 0.4, transparent: false  } );
+				var line = new THREE.LineSegments( geometry, material );
+				line.name = 'line';
+				scene.add( line );
+
+				//
+				raycaster = new THREE.Raycaster();
+				mouse = new THREE.Vector2();
+
+				var geometry = new THREE.PlaneBufferGeometry( 1000, 1000 );
+				geometry.rotateX( - Math.PI / 2 );
+
+				plane = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { visible: false } ) );
+				plane.name = 'plane';
+				scene.add( plane );
+				objects.push( plane );
+
+				// add set of FontDrops - empty at first
+				scene.add( dropsActive );
+
+				// Lights
+
+				var ambientLight = new THREE.AmbientLight( 0x606060 );
+				scene.add( ambientLight );
+
+				var directionalLight = new THREE.DirectionalLight( 0xffffff );
+				directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
+				scene.add( directionalLight );
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setClearColor( 0xf0f0f0 );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.clippingPlanes.push( groundPlane );
+				container.appendChild( renderer.domElement );
+				
+				if ( window.PointerEvent )
+				{
+          document.addEventListener( 'pointermove',   onDocumentMouseMove, false );
+          document.addEventListener( 'pointerdown',   onDocumentMouseDown, false );
+          document.addEventListener( 'pointerup',     onDocumentMouseUp,   false );
+          document.addEventListener( 'pointercancel', onDocumentMouseUp,   false );
+          
+          // inhibit MS context menu
+          // see: https://msdn.microsoft.com/en-us/library/jj583807(v=vs.85).aspx
+          var eatEventFunc = function(e) { e.preventDefault(); };
+          document.addEventListener( 'MSHoldVisual', eatEventFunc, false);
+          document.addEventListener( 'contextmenu',  eatEventFunc, false);
+				}
+				else
+				{
+          document.addEventListener( 'mousemove',  onDocumentMouseMove,  false );
+          document.addEventListener( 'mousedown',  onDocumentMouseDown,  false );
+          document.addEventListener( 'mouseup',    onDocumentMouseUp,    false );
+
+          document.addEventListener( 'touchmove',   onDocumentTouchMove,  false );
+          document.addEventListener( 'touchstart',  onDocumentTouchStart, false );
+          document.addEventListener( 'touchend',    onDocumentTouchEnd,   false );
+          document.addEventListener( 'touchcancel', onDocumentTouchEnd,   false );
+        }
+
+				//
+				window.addEventListener( 'resize', onWindowResize, false );
+			}
+			
+// 			function recordMouseInfo( event )
+// 			{
+// 				event.preventDefault();
+// 				mouseInfo.clientX  = event.clientX;
+// 				mouseInfo.clientY  = event.clientY;
+// 				mouseInfo.buttonOn = (event.buttons & 1) || (event.button & 1);
+// 			}
+
+			function onDocumentMouseMove( event )
+			{
+				event.preventDefault();
+				mouseInfo.clientX  = event.clientX || event.layerX;
+				mouseInfo.clientY  = event.clientY || event.layerY;
+				//console.log( 'onDocumentMouseMove: ' + mouseInfo.buttonOn );
+			}
+
+			function onDocumentMouseDown( event )
+			{
+				event.preventDefault();
+				mouseInfo.clientX  = event.clientX || event.layerX;
+				mouseInfo.clientY  = event.clientY || event.layerY;
+				mouseInfo.buttonOn = true;
+				//console.log( 'onDocumentMouseDown: ' + mouseInfo.buttonOn );
+			}
+
+			function onDocumentMouseUp( event )
+			{
+				event.preventDefault();
+				mouseInfo.clientX  = event.clientX || event.layerX;
+				mouseInfo.clientY  = event.clientY || event.layerY;
+				mouseInfo.buttonOn = false;
+				//console.log( 'onDocumentMouseUp:   ' + mouseInfo.buttonOn );
+			}
+
+			function onDocumentTouchMove( event )
+			{
+				event.preventDefault();
+				if ( event.touches && event.touches.length )
+				{
+				  var touch0 = event.touches[0];
+          mouseInfo.clientX  = touch0.clientX;
+          mouseInfo.clientY  = touch0.clientY;
+        }
+				//console.log( 'onDocumentMouseMove: ' + mouseInfo.buttonOn );
+			}
+
+			function onDocumentTouchStart( event )
+			{
+				event.preventDefault();
+				if ( event.touches && event.touches.length )
+				{
+				  var touch0 = event.touches[0];
+          mouseInfo.clientX  = touch0.clientX;
+          mouseInfo.clientY  = touch0.clientY;
+        }
+				mouseInfo.buttonOn = true;
+				//console.log( 'onDocumentMouseDown: ' + mouseInfo.buttonOn );
+			}
+
+			function onDocumentTouchEnd( event )
+			{
+				event.preventDefault();
+				if ( event.touches && event.touches.length )
+				{
+				  var touch0 = event.touches[0];
+          mouseInfo.clientX  = touch0.clientX;
+          mouseInfo.clientY  = touch0.clientY;
+        }
+				mouseInfo.buttonOn = false;
+				//console.log( 'onDocumentMouseUp:   ' + mouseInfo.buttonOn );
+			}
+
+			function onWindowResize()
+			{
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function addDrop ( clientX, clientY )
+			{
+				mouse.set( ( clientX / window.innerWidth ) * 2 - 1, - ( clientY / window.innerHeight ) * 2 + 1 );
+
+				raycaster.setFromCamera( mouse, camera );
+
+				var intersects = raycaster.intersectObjects( objects );
+
+				if ( intersects.length > 0 )
+				{
+					var intersect = intersects[ 0 ];
+				  var droplet;
+				  if ( dropsIdle.children.length )
+				    droplet = dropsIdle.children[0];  // removed from list in dropsActive.add()
+				  else
+				    droplet = new Droplet();
+          droplet.init( intersect.point );
+					dropsActive.add( droplet );         // side effect: removes 'droplet' from dropsIdle.children
+				}
+			}
+
+// 			function onDocumentMouseDown( event ) {
+// 				event.preventDefault();
+// 				addDrop( event.clientX, event.clientY );
+// 			}
+// 
+// 			function onDocumentKeyDown( event ) {
+// 				switch( event.keyCode ) {
+// 					case 16: isShiftDown = true; break;
+// 				}
+// 			}
+// 
+// 			function onDocumentKeyUp( event ) {
+// 				switch ( event.keyCode ) {
+// 					case 16: isShiftDown = false; break;
+// 				}
+// 			}
+
+			function animate()
+			{
+				requestAnimationFrame( animate );
+				render();
+			}
+
+			function render()
+			{
+			  if ( mouseInfo.buttonOn )
+			  {
+          addDrop( mouseInfo.clientX, mouseInfo.clientY );
+          addDrop( mouseInfo.clientX, mouseInfo.clientY );
+          addDrop( mouseInfo.clientX, mouseInfo.clientY );
+//           addDrop( mouseInfo.clientX, mouseInfo.clientY );
+//           addDrop( mouseInfo.clientX, mouseInfo.clientY );
+//           addDrop( mouseInfo.clientX, mouseInfo.clientY );
+			  }
+			
+        numDrops = dropsActive.children.length;
+        var activeList = dropsActive.children.slice(0);
+        for ( var i=0; i<numDrops; i++ )
+        {
+          thisDrop = activeList[i];
+          thisDrop.update();
+          if ( thisDrop.droplet.position.y < -SPRITE_RADIUS )
+            dropsIdle.add( thisDrop );
+        }
+
+        renderer.render( scene, camera );
+			}
+
+		</script>
+
+	</body>
+</html>
