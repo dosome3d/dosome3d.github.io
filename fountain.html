@@ -302,14 +302,6 @@
 				window.addEventListener( 'resize', onWindowResize, false );
 			}
 			
-// 			function recordMouseInfo( event )
-// 			{
-// 				event.preventDefault();
-// 				mouseInfo.clientX  = event.clientX;
-// 				mouseInfo.clientY  = event.clientY;
-// 				mouseInfo.buttonOn = (event.buttons & 1) || (event.button & 1);
-// 			}
-
 			function onDocumentMouseMove( event )
 			{
 				event.preventDefault();
@@ -402,23 +394,6 @@
 				}
 			}
 
-// 			function onDocumentMouseDown( event ) {
-// 				event.preventDefault();
-// 				addDrop( event.clientX, event.clientY );
-// 			}
-// 
-// 			function onDocumentKeyDown( event ) {
-// 				switch( event.keyCode ) {
-// 					case 16: isShiftDown = true; break;
-// 				}
-// 			}
-// 
-// 			function onDocumentKeyUp( event ) {
-// 				switch ( event.keyCode ) {
-// 					case 16: isShiftDown = false; break;
-// 				}
-// 			}
-
 			function animate()
 			{
 				requestAnimationFrame( animate );
@@ -432,9 +407,6 @@
           addDrop( mouseInfo.clientX, mouseInfo.clientY );
           addDrop( mouseInfo.clientX, mouseInfo.clientY );
           addDrop( mouseInfo.clientX, mouseInfo.clientY );
-//           addDrop( mouseInfo.clientX, mouseInfo.clientY );
-//           addDrop( mouseInfo.clientX, mouseInfo.clientY );
-//           addDrop( mouseInfo.clientX, mouseInfo.clientY );
 			  }
 			
         numDrops = dropsActive.children.length;
