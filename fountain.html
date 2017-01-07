@@ -39,7 +39,7 @@
 			
 			SPRITE_RADIUS   = 10;
       LAUNCH_RADIUS   = 3.2 * METERS_PER_UNIT;
-      
+
       groundPlane = new THREE.Plane( new THREE.Vector3(0,1,0), 0 );
 
 			// inheritance tools from http://javascriptissexy.com/oop-in-javascript-what-you-need-to-know/
@@ -58,14 +58,14 @@
         copyOfParent.constructor = childObject;
         childObject.prototype = copyOfParent;
       }
-      
+
       function RandomRange( min, max )
       {
         return Math.random() * (max - min) + min;
       }
 			
 			var colorList = [];
-    
+
       var STEPS_PER_CHAN = 5;
       var chanCombos = [ [0,1,2], [1,0,2], [2,1,0] ];
       var colorVector = [];
@@ -74,7 +74,7 @@
         majorChan  = chanCombos[comboIdx][0];
         minorChanA = chanCombos[comboIdx][1];
         minorChanB = chanCombos[comboIdx][2];
-    
+
         for ( var majorValIdx=0; majorValIdx<STEPS_PER_CHAN; majorValIdx++ )
         {
           colorVector[majorChan] = 0.7 + (majorValIdx/(STEPS_PER_CHAN-1))*(1.0-0.7);
@@ -89,7 +89,7 @@
           }
         }
       }
-      
+
       function getRandomColor()
       {
         var idx = Math.floor( Math.random() * colorList.length );
@@ -99,7 +99,7 @@
 			function Droplet ( )
 			{
 			  THREE.Group.call( this );
-			  
+			
 				var lineGeo = new THREE.Geometry();
 				var lineVertexLo = new THREE.Vector3( 0, -SPRITE_RADIUS, 0 );
 				var lineVertexHi = new THREE.Vector3( 0,  SPRITE_RADIUS, 0 );
@@ -112,9 +112,9 @@
 				shadowGeo.vertices.push( new THREE.Vector3() );
 				shadowGeo.vertices.push( new THREE.Vector3() );
 			  this.shadow = new THREE.Line( shadowGeo, this.shadowMaterial );
-			  
+			
 			  this.add( this.droplet, this.shadow );
-			  
+			
 			  this.startPos = new THREE.Vector3();
 			  this.startV   = new THREE.Vector3();
 			}
@@ -167,7 +167,7 @@
 			  var nowX      = this.startPos.x + this.startV.x * diffTime;   // in meters
 			  var nowZ      = this.startPos.z + this.startV.z * diffTime;   // in meters
 			  this.setPositionFromMeters( nowX, height, nowZ );
-			  
+			
 			  // figure out shadow for this droplet
 			  var dropletPos = this.droplet.position;   // in world units
 			  this.scratchRay.origin.set( dropletPos.x,  dropletPos.y+SPRITE_RADIUS, dropletPos.z );
@@ -179,7 +179,7 @@
 			  {
 			    shadowLineTop = this.scratchRay.intersectPlane( groundPlane );
 			    shadowLineBot = new THREE.Vector3();
-			    
+			
 			    this.scratchRay.origin.y = dropletPos.y - SPRITE_RADIUS;
 			    if ( this.scratchRay.origin.y < 0 )
 			      shadowLineBot.set( dropletPos.x, 0.0, dropletPos.z );
@@ -279,7 +279,7 @@
           document.addEventListener( 'pointerdown',   onDocumentMouseDown, false );
           document.addEventListener( 'pointerup',     onDocumentMouseUp,   false );
           document.addEventListener( 'pointercancel', onDocumentMouseUp,   false );
-          
+
           // inhibit MS context menu
           // see: https://msdn.microsoft.com/en-us/library/jj583807(v=vs.85).aspx
           var eatEventFunc = function(e) { e.preventDefault(); };
