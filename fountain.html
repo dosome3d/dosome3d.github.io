@@ -28,15 +28,15 @@
     <script>
 
       if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
-      
+
       ACC = 9.8;
       TWO_PI = 2.0 * Math.PI;
-      
+
       METERS_PER_BOX  = 0.7;
       UNITS_PER_BOX   = 50;
       METERS_PER_UNIT = METERS_PER_BOX / UNITS_PER_BOX;
       UNITS_PER_METER = UNITS_PER_BOX / METERS_PER_BOX;
-      
+
       SPRITE_RADIUS   = 10;
       LAUNCH_RADIUS   = 3.2 * METERS_PER_UNIT;
 
@@ -63,7 +63,7 @@
       {
         return Math.random() * (max - min) + min;
       }
-      
+
       var colorList = [];
 
       var STEPS_PER_CHAN = 5;
@@ -99,7 +99,7 @@
       function Droplet ( )
       {
         THREE.Group.call( this );
-      
+
         var lineGeo = new THREE.Geometry();
         var lineVertexLo = new THREE.Vector3( 0, -SPRITE_RADIUS, 0 );
         var lineVertexHi = new THREE.Vector3( 0,  SPRITE_RADIUS, 0 );
@@ -112,27 +112,27 @@
         shadowGeo.vertices.push( new THREE.Vector3() );
         shadowGeo.vertices.push( new THREE.Vector3() );
         this.shadow = new THREE.Line( shadowGeo, this.shadowMaterial );
-      
+
         this.add( this.droplet, this.shadow );
-      
+
         this.startPos = new THREE.Vector3();
         this.startV   = new THREE.Vector3();
       }
       inheritPrototype( Droplet, THREE.Group );
-      
+
       Droplet.prototype.shadowMaterial = new THREE.LineBasicMaterial(
         { color: 0xdddddd, linewidth: 2, // polygonOffset: true, polygonOffsetUnits: -22,
         depthTest: true }
       );
-      
+
       Droplet.prototype.lightDir = (new THREE.Vector3( -0.4, -0.6, +0.1 )).normalize();
-      
+
       Droplet.prototype.scratchRay = new THREE.Ray( new THREE.Vector3(), Droplet.prototype.lightDir );
-      
+
       Droplet.prototype.init = function( startPos )
       {
         this.droplet.material.color.copy( getRandomColor() );
-      
+
         startPos = startPos || new THREE.Vector3();
         this.droplet.position.set( startPos.x, 0, startPos.z );
 
@@ -148,12 +148,12 @@
 
         this.shadow.visible = true;
       }
-      
+
       Droplet.prototype.getPositionInMeters = function()
       {
         return this.droplet.position.clone().multiplyScalar( METERS_PER_UNIT );
       }
-      
+
       Droplet.prototype.setPositionFromMeters = function( x, y, z )
       {
         return this.droplet.position.set( x*UNITS_PER_METER, y*UNITS_PER_METER, z*UNITS_PER_METER );
@@ -167,7 +167,7 @@
         var nowX      = this.startPos.x + this.startV.x * diffTime;   // in meters
         var nowZ      = this.startPos.z + this.startV.z * diffTime;   // in meters
         this.setPositionFromMeters( nowX, height, nowZ );
-      
+
         // figure out shadow for this droplet
         var dropletPos = this.droplet.position;   // in world units
         this.scratchRay.origin.set( dropletPos.x,  dropletPos.y+SPRITE_RADIUS, dropletPos.z );
@@ -179,7 +179,7 @@
         {
           shadowLineTop = this.scratchRay.intersectPlane( groundPlane );
           shadowLineBot = new THREE.Vector3();
-      
+
           this.scratchRay.origin.y = dropletPos.y - SPRITE_RADIUS;
           if ( this.scratchRay.origin.y < 0 )
             shadowLineBot.set( dropletPos.x, 0.0, dropletPos.z );
@@ -201,7 +201,7 @@
       var objects = [];
       var dropsActive = new THREE.Object3D();
       var dropsIdle   = new THREE.Object3D();
-      
+
       var mouseInfo = { clientX:null, clientY:null, buttonOn:false };
 
       init();
@@ -272,7 +272,7 @@
         renderer.setSize( window.innerWidth, window.innerHeight );
         renderer.clippingPlanes.push( groundPlane );
         container.appendChild( renderer.domElement );
-        
+
         if ( window.PointerEvent )
         {
           document.addEventListener( 'pointermove',   onDocumentMouseMove, false );
@@ -301,7 +301,7 @@
         //
         window.addEventListener( 'resize', onWindowResize, false );
       }
-      
+
       function onDocumentMouseMove( event )
       {
         event.preventDefault();
@@ -408,7 +408,7 @@
           addDrop( mouseInfo.clientX, mouseInfo.clientY );
           addDrop( mouseInfo.clientX, mouseInfo.clientY );
         }
-      
+
         numDrops = dropsActive.children.length;
         var activeList = dropsActive.children.slice(0);
         for ( var i=0; i<numDrops; i++ )
