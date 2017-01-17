@@ -125,6 +125,7 @@
         depthTest: true }
       );
 
+      // Direction of simulated light - used for fake-shadows and not any real lighting
       Droplet.prototype.lightDir = (new THREE.Vector3( -0.4, -0.6, +0.1 )).normalize();
 
       Droplet.prototype.scratchRay = new THREE.Ray( new THREE.Vector3(), Droplet.prototype.lightDir );
@@ -260,11 +261,11 @@
         // Lights
 
         var ambientLight = new THREE.AmbientLight( 0x606060 );
-        scene.add( ambientLight );
+        //scene.add( ambientLight );
 
         var directionalLight = new THREE.DirectionalLight( 0xffffff );
         directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
-        scene.add( directionalLight );
+        //scene.add( directionalLight );
 
         renderer = new THREE.WebGLRenderer( { antialias: true } );
         renderer.setClearColor( 0xf0f0f0 );
