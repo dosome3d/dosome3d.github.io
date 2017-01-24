@@ -41,6 +41,7 @@
       LAUNCH_RADIUS   = 3.2 * METERS_PER_UNIT;
 
       groundPlane = new THREE.Plane( new THREE.Vector3(0,1,0), 0 );
+      groundPlaneArray = [ groundPlane ];
 
       // inheritance tools from http://javascriptissexy.com/oop-in-javascript-what-you-need-to-know/
       if (typeof Object.create !== 'function')
@@ -105,7 +106,8 @@
         var lineVertexHi = new THREE.Vector3( 0,  SPRITE_RADIUS, 0 );
         lineGeo.vertices.push( lineVertexLo );
         lineGeo.vertices.push( lineVertexHi );
-        var lineMaterial = new THREE.LineBasicMaterial( { color: 0x33ff44, linewidth: 3 } );
+        var lineMaterial = new THREE.LineBasicMaterial( { linewidth: 3 } );
+        lineMaterial.clippingPlanes = groundPlaneArray;
         this.droplet = new THREE.Line( lineGeo, lineMaterial );
 
         var shadowGeo = new THREE.Geometry();
@@ -271,7 +273,6 @@
         renderer.setClearColor( 0xf0f0f0 );
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.setSize( window.innerWidth, window.innerHeight );
-        renderer.clippingPlanes.push( groundPlane );
         container.appendChild( renderer.domElement );
 
         if ( window.PointerEvent )
