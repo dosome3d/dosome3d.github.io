@@ -260,15 +260,6 @@
         // add set of FontDrops - empty at first
         scene.add( dropsActive );
 
-        // Lights
-
-        var ambientLight = new THREE.AmbientLight( 0x606060 );
-        //scene.add( ambientLight );
-
-        var directionalLight = new THREE.DirectionalLight( 0xffffff );
-        directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
-        //scene.add( directionalLight );
-
         renderer = new THREE.WebGLRenderer( { antialias: true } );
         renderer.setClearColor( 0xf0f0f0 );
         renderer.setPixelRatio( window.devicePixelRatio );
