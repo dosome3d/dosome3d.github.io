@@ -201,7 +201,6 @@
       var plane, cube;
       var mouse, raycaster, isShiftDown = false;
 
-      var objects = [];
       var dropsActive = new THREE.Object3D();
       var dropsIdle   = new THREE.Object3D();
 
@@ -255,7 +254,6 @@
         plane = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { visible: false } ) );
         plane.name = 'plane';
         scene.add( plane );
-        objects.push( plane );
 
         // add set of FontDrops - empty at first
         scene.add( dropsActive );
@@ -372,7 +370,7 @@
 
         raycaster.setFromCamera( mouse, camera );
 
-        var intersects = raycaster.intersectObjects( objects );
+        var intersects = raycaster.intersectObject( plane );
 
         if ( intersects.length > 0 )
         {
