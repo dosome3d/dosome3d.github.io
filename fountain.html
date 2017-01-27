@@ -106,9 +106,10 @@
         var lineVertexHi = new THREE.Vector3( 0,  SPRITE_RADIUS, 0 );
         lineGeo.vertices.push( lineVertexLo );
         lineGeo.vertices.push( lineVertexHi );
-        var lineMaterial = new THREE.LineBasicMaterial( { linewidth: 3 } );
+        var lineMaterial = new THREE.LineBasicMaterial( { linewidth: 3 } );  // includes default Z-buffering
         lineMaterial.clippingPlanes = groundPlaneArray;
         this.droplet = new THREE.Line( lineGeo, lineMaterial );
+        this.droplet.renderOrder = 1; // render after groundplane-grid and droplet-shadows
 
         var shadowGeo = new THREE.Geometry();
         shadowGeo.vertices.push( new THREE.Vector3() );
@@ -123,8 +124,12 @@
       inheritPrototype( Droplet, THREE.Group );
 
       Droplet.prototype.shadowMaterial = new THREE.LineBasicMaterial(
-        { color: 0xdddddd, linewidth: 2, // polygonOffset: true, polygonOffsetUnits: -22,
-        depthTest: true }
+        {
+          color:      0xdddddd,
+          linewidth:  2,
+          depthTest:  false,
+          depthWrite: false
+        }
       );
 
       // Direction of simulated light - used for fake-shadows and not any real lighting
@@ -198,10 +203,9 @@
 
       var container;
       var camera, scene, renderer;
-      var plane, cube;
+      var intersectionPlane;
       var mouse, raycaster, isShiftDown = false;
 
-      var objects = [];
       var dropsActive = new THREE.Object3D();
       var dropsIdle   = new THREE.Object3D();
 
@@ -240,8 +244,8 @@
           geometry.vertices.push( new THREE.Vector3( i, 0,   size ) );
         }
 
-        var material = new THREE.LineBasicMaterial( { color: 0x888888, opacity: 0.4, transparent: false  } );
-        var line = new THREE.LineSegments( geometry, material );
+        var gridMaterial = new THREE.LineBasicMaterial( { color: 0x888888, depthTest: false, depthWrite: false } );
+        var line = new THREE.LineSegments( geometry, gridMaterial );
         line.name = 'line';
         scene.add( line );
 
@@ -252,22 +256,10 @@
         var geometry = new THREE.PlaneBufferGeometry( 1000, 1000 );
         geometry.rotateX( - Math.PI / 2 );
 
-        plane = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { visible: false } ) );
-        plane.name = 'plane';
-        scene.add( plane );
-        objects.push( plane );
+        intersectionPlane = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { visible: false } ) );
 
         // add set of FontDrops - empty at first
         scene.add( dropsActive );
-
-        // Lights
-
-        var ambientLight = new THREE.AmbientLight( 0x606060 );
-        //scene.add( ambientLight );
-
-        var directionalLight = new THREE.DirectionalLight( 0xffffff );
-        directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
-        //scene.add( directionalLight );
 
         renderer = new THREE.WebGLRenderer( { antialias: true } );
         renderer.setClearColor( 0xf0f0f0 );
@@ -381,7 +373,7 @@
 
         raycaster.setFromCamera( mouse, camera );
 
-        var intersects = raycaster.intersectObjects( objects );
+        var intersects = raycaster.intersectObject( intersectionPlane );
 
         if ( intersects.length > 0 )
         {
