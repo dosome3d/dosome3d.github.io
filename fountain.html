@@ -106,9 +106,10 @@
         var lineVertexHi = new THREE.Vector3( 0,  SPRITE_RADIUS, 0 );
         lineGeo.vertices.push( lineVertexLo );
         lineGeo.vertices.push( lineVertexHi );
-        var lineMaterial = new THREE.LineBasicMaterial( { linewidth: 3 } );
+        var lineMaterial = new THREE.LineBasicMaterial( { linewidth: 3 } );  // includes default Z-buffering
         lineMaterial.clippingPlanes = groundPlaneArray;
         this.droplet = new THREE.Line( lineGeo, lineMaterial );
+        this.droplet.renderOrder = 1; // render after groundplane-grid and droplet-shadows
 
         var shadowGeo = new THREE.Geometry();
         shadowGeo.vertices.push( new THREE.Vector3() );
@@ -123,8 +124,12 @@
       inheritPrototype( Droplet, THREE.Group );
 
       Droplet.prototype.shadowMaterial = new THREE.LineBasicMaterial(
-        { color: 0xdddddd, linewidth: 2, // polygonOffset: true, polygonOffsetUnits: -22,
-        depthTest: true }
+        {
+          color:      0xdddddd,
+          linewidth:  2,
+          depthTest:  false,
+          depthWrite: false
+        }
       );
 
       // Direction of simulated light - used for fake-shadows and not any real lighting
