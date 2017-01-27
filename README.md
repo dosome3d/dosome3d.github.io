@@ -1,5 +1,7 @@
 # dosome3d.github.io
 
+Welcome to my modest repo on GitHub. &mdash; Kelvin Thompson
+
 This is a place for me to play around with some experiments in **3D** &amp; **WebGL** &amp; **ThreeJS**.
 
 So far there's just one demo - a [pretty, interactive fountain](https://dosome3d.github.io/fountain.html).
