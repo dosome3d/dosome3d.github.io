@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Pretty Fountain!</title>
+    <title>Interactive 3D Fountain!</title>
     <meta name="description" content="Try this interactive demo of a 3D fountain. Just click! Uses WebGL and three.js."/>
     <meta name="author" content="Kelvin Thompson">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
@@ -223,6 +223,7 @@
       var dropsIdle   = new THREE.Object3D();
 
       var mouseInfo = { clientX:null, clientY:null, buttonOn:false };
+      var touchList = [];
 
       init();
       animate();
@@ -280,7 +281,24 @@
         renderer.setSize( window.innerWidth, window.innerHeight );
         container.appendChild( renderer.domElement );
 
-        if ( window.PointerEvent )
+        if ( typeof TouchEvent !== 'undefined' )
+        {
+          document.addEventListener( 'mousemove',  onDocumentMouseMove,  false );
+          document.addEventListener( 'mousedown',  onDocumentMouseDown,  false );
+          document.addEventListener( 'mouseup',    onDocumentMouseUp,    false );
+
+          var handleTouchUpdate = function(event) {
+            event.preventDefault();
+            touchList = event.touches || [];
+            mouseInfo.buttonOn = !! touchList.length;
+          };
+          
+          document.addEventListener( 'touchmove',   handleTouchUpdate, false );
+          document.addEventListener( 'touchstart',  handleTouchUpdate, false );
+          document.addEventListener( 'touchend',    handleTouchUpdate, false );
+          document.addEventListener( 'touchcancel', handleTouchUpdate, false );
+        }
+        else if ( typeof PointerEvent !== 'undefined' )
         {
           document.addEventListener( 'pointermove',   onDocumentMouseMove, false );
           document.addEventListener( 'pointerdown',   onDocumentMouseDown, false );
@@ -298,11 +316,6 @@
           document.addEventListener( 'mousemove',  onDocumentMouseMove,  false );
           document.addEventListener( 'mousedown',  onDocumentMouseDown,  false );
           document.addEventListener( 'mouseup',    onDocumentMouseUp,    false );
-
-          document.addEventListener( 'touchmove',   onDocumentTouchMove,  false );
-          document.addEventListener( 'touchstart',  onDocumentTouchStart, false );
-          document.addEventListener( 'touchend',    onDocumentTouchEnd,   false );
-          document.addEventListener( 'touchcancel', onDocumentTouchEnd,   false );
         }
 
         //
@@ -409,7 +422,17 @@
 
       function render()
       {
-        if ( mouseInfo.buttonOn )
+        if ( touchList.length )
+        {
+          for (var i = 0; i < touchList.length; i++)
+          {
+            var t = touchList[i];
+            addDrop( t.clientX, t.clientY );
+            addDrop( t.clientX, t.clientY );
+            addDrop( t.clientX, t.clientY );
+          }
+        }
+        else if ( mouseInfo.buttonOn )
         {
           addDrop( mouseInfo.clientX, mouseInfo.clientY );
           addDrop( mouseInfo.clientX, mouseInfo.clientY );
